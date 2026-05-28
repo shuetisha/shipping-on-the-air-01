@@ -1,0 +1,10 @@
+CREATE TABLE drones (
+    id UUID PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    max_payload_kg DOUBLE PRECISION NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP NOT NULL
+);
