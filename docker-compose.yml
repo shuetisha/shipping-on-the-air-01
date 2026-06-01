@@ -1,0 +1,93 @@
+services:
+  shipment-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: shipment
+      POSTGRES_USER: shipment
+      POSTGRES_PASSWORD: shipment
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shipment -d shipment"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  fleet-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fleet
+      POSTGRES_USER: fleet
+      POSTGRES_PASSWORD: fleet
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fleet -d fleet"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  delivery-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: delivery
+      POSTGRES_USER: delivery
+      POSTGRES_PASSWORD: delivery
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U delivery -d delivery"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  fleet-service:
+    build:
+      context: .
+      dockerfile: services/fleet-service/Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://fleet-db:5432/fleet
+      SPRING_DATASOURCE_USERNAME: fleet
+      SPRING_DATASOURCE_PASSWORD: fleet
+    depends_on:
+      fleet-db:
+        condition: service_healthy
+
+  shipment-service:
+    build:
+      context: .
+      dockerfile: services/shipment-service/Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://shipment-db:5432/shipment
+      SPRING_DATASOURCE_USERNAME: shipment
+      SPRING_DATASOURCE_PASSWORD: shipment
+    depends_on:
+      shipment-db:
+        condition: service_healthy
+
+  delivery-service:
+    build:
+      context: .
+      dockerfile: services/delivery-service/Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://delivery-db:5432/delivery
+      SPRING_DATASOURCE_USERNAME: delivery
+      SPRING_DATASOURCE_PASSWORD: delivery
+      SHIPMENT_SERVICE_URL: http://shipment-service:8081
+      FLEET_SERVICE_URL: http://fleet-service:8082
+    depends_on:
+      delivery-db:
+        condition: service_healthy
+      shipment-service:
+        condition: service_started
+      fleet-service:
+        condition: service_started
